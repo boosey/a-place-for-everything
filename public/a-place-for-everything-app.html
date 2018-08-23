@@ -1,0 +1,211 @@
+<link rel="import" href="app-components/app-elements.html">
+<link rel="import" href="bower_components/app-storage/app-indexeddb-mirror/app-indexeddb-mirror.html">
+<link rel="import" href="bower_components/polymerfire/polymerfire.html">
+<link rel="import" href="bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/font-roboto/roboto.html">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,700">
+
+
+<dom-module id="a-place-for-everything-app">
+  <template>
+
+    <!-- <style include="app-shared-styles"></style> -->
+
+    <firebase-auth
+        id="auth"
+        provider="google"
+        signed-in="{{signedIn}}"
+        user="{{user}}">
+    </firebase-auth>
+
+    <app-toolbar
+      id="toolbar"
+      signed-in="[[signedIn]]"
+      on-sign-out="signOut">
+    </app-toolbar>
+
+    <app-login
+        on-sign-in="signIn"
+        signed-in="[[signedIn]]"
+        disabled="[[!online]]">
+    </app-login>
+
+    <div id="addpaneldiv">
+        <app-add-thing id="addpanel" record={{recordtoadd}}
+          showing={{showingAddPanel}} pinned={{pinnedAddPanel}}></app-add-thing>
+    </div>
+
+    <app-things-list id="appthingslist" thingsandplaces={{thingsandplaces}}></app-things-list>
+
+    <iron-ajax
+      id="requestThingsAndPlaces"
+      url="https://a-place-for-everything.firebaseapp.com/api/thingsinplaces"
+      headers$='{"authorization":" Bearer {{idToken}}"}'
+      handle-as="json"
+      on-response="handleResponseGetThingsAndPlaces">
+    </iron-ajax>
+
+    <iron-ajax
+      id="addThingInPlace"
+      method="post"
+      url="https://a-place-for-everything.firebaseapp.com/api/thingsinplaces"
+      headers$='{"authorization":" Bearer {{idToken}}"}'
+      handle-as="json"
+      content-type="application/json"
+      on-response="handleResponseAddRecord"
+      body={{recordtoadd}}>
+    </iron-ajax>
+
+    <iron-ajax
+      id="updateThingInPlace"
+      method="PUT"
+      url="https://a-place-for-everything.firebaseapp.com/api/thingsinplaces/[[recordid]]"
+      headers$='{"authorization":" Bearer {{idToken}}"}'
+      handle-as="json"
+      content-type="application/json"
+      on-response="handleResponseUpdateRecord"
+      body={{recordtoupdate}}>
+    </iron-ajax>
+
+    <iron-ajax
+      id="deleteThingInPlace"
+      method="DELETE"
+      url="https://a-place-for-everything.firebaseapp.com/api/thingsinplaces/[[recordid]]"
+      headers$='{"authorization":" Bearer {{idToken}}"}'
+      on-response="handleResponseDeleteRecord">
+    </iron-ajax>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'a-place-for-everything-app',
+
+      properties: {
+
+        user: {
+            type:Object,
+            notify: true,
+            reflectToAttribute: true
+        },
+
+        idToken: {
+            type: String,
+            notify: true
+        },
+
+        thingsandplaces: {
+            type: Array,
+            notify: true
+        },
+
+        recordtoadd: {
+          type: Object,
+          notify: true
+        },
+
+        recordid: {
+          type: String,
+          notify: true
+        },
+
+        showingAddPanel: {
+          type: Boolean,
+          value: false,
+          notify: true
+        },
+
+        pinnedAddPanel: {
+          type: Boolean,
+          value: false,
+          notify: true
+        }
+
+      },
+
+      observers: ['_userChanged(signedIn)'],
+
+      ready: function() {
+
+        this.$.appthingslist.addEventListener('recordchanged', evt => this.updateRecord(evt));
+        this.$.appthingslist.addEventListener('recorddeleted', evt => this.deleteRecord(evt));
+        this.$.toolbar.addEventListener('additemrequested', evt => this.showAddPanel(evt));
+        this.$.addpanel.addEventListener('recordchanged', evt => this.addRecord(evt));
+      },
+
+      _userChanged(signedIn){
+
+        if (signedIn) {
+          var originalThis = this;
+          this.user.getIdToken(true).then(function(idToken) {
+            originalThis.idToken = idToken;
+            originalThis.getThingsAndPlaces();
+          }).catch(function(error) {
+            console.log("didn't get an idToken");
+          });
+        }
+      },
+
+      handleResponseGetThingsAndPlaces: function (evt) {
+        this.thingsandplaces = evt.detail.response;
+      },
+
+      handleResponseAddRecord: function(evt){
+        if (!this.pinnedAddPanel) {
+          this.showingAddPanel = false;
+        }
+        this.recordtoadd = {"thing":"", "place":""};
+        this.recordid = "";
+        this.getThingsAndPlaces();
+      },
+
+      getThingsAndPlaces: function() {
+        this.$.requestThingsAndPlaces.generateRequest();
+      },
+
+      updateRecord: function(evt) {
+        this.recordtoupdate = evt.detail;
+        this.recordid = this.recordtoupdate.id;
+        delete this.recordtoupdate.id;
+        this.$.updateThingInPlace.generateRequest();
+      },
+
+      deleteRecord: function(evt) {
+        this.recordid = evt.detail.id;
+        this.$.deleteThingInPlace.generateRequest();
+      },
+
+      handleResponseDeleteRecord: function() {
+        this.recordid = "";
+        this.$.requestThingsAndPlaces.generateRequest();
+      },
+
+      handleResponseUpdateRecord: function() {
+        this.recordtoupdate = {"thing":"", "place":""};
+        this.recordid = "";
+        this.$.requestThingsAndPlaces.generateRequest();
+      },
+
+      addRecord: function(evt) {
+        if (evt.detail.thing.length && evt.detail.place.length) {
+          this.$.addThingInPlace.generateRequest();
+        }
+      },
+
+      showAddPanel: function () {
+        this.showingAddPanel = true;
+      },
+
+      signIn: function() {
+        this.$.auth.signInWithPopup();
+      },
+
+      signOut: function() {
+        if (this.$.auth) {
+          this.$.auth.signOut();
+          this.idToken = null;
+        }
+      }
+
+    });
+  </script>
+</dom-module>

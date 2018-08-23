@@ -1,0 +1,57 @@
+
+
+<dom-module id="app-things-list">
+  <template>
+
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        background-color: #fafafa;
+        color: #212121;
+        padding: 1em;
+        @apply --paper-font-common-base;
+        @apply --shadow-elevation-2dp;
+        border-radius: 2px;
+        width: 100%;
+        height: 100%
+      }
+    </style>
+
+      <template is="dom-repeat" items="{{thingsandplaces}}">
+          <app-thing record={{item}} ></app-thing>
+      </template>
+
+    <iron-ajax
+      id="requestThingsAndPlaces"
+      url="https://us-central1-fir-project-5188f.cloudfunctions.net/api/thingsinplaces"
+      handle-as="json"
+      on-response="handleResponseThingsAndPlaces">
+    </iron-ajax>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'app-things-list',
+
+      properties: {
+        thingsandplaces: {
+            type: Array
+        }
+      },
+
+      ready: function () {
+          this.getThingsAndPlaces();
+      },
+
+      handleResponseThingsAndPlaces: function (data) {
+          this.thingsandplaces = data.detail.response;
+      },
+
+      getThingsAndPlaces: function() {
+        this.$.requestThingsAndPlaces.generateRequest();
+      }
+
+    });
+  </script>
+</dom-module>

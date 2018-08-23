@@ -1,0 +1,172 @@
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<dom-module id="app-thing-input">
+  <template>
+
+    <style include="iron-flex iron-flex-alignment">
+
+
+    :host {
+        display: block;
+        box-sizing: border-box;
+        padding: 0em;
+      }
+
+    paper-icon-button.lockButton{
+      width: 24px;
+      height: 24px;
+      padding: 0px;
+      padding-top: 2px;
+      padding-bottom: 4px;
+    }
+
+    div.paperinputmirror{
+        visibility: hidden;
+        height: 0px;
+    }
+
+    div.appthinginputcontainer{
+      @apply --layout-horizontal;
+      @apply --layout-center;
+  }
+
+    paper-input.paperinput {
+      --paper-input-container: {
+        padding: 0px;
+      }
+      --paper-input-container-input: {
+        font-family: var(--thing-or-place-font-family);
+        font-size: var(--thing-or-place-font-size);
+        font-weight: var(--thing-or-place-font-weight);
+      }
+      --paper-input-container-label:{
+        font-size: 16px;
+      }
+
+    }
+    </style>
+
+    <div id="app-thing-input-container" class="appthinginputcontainer">
+
+      <paper-input id="paperinput" class="paperinput" value="{{value}}"
+          readOnly="{{!editable}}" label="{{label}}" no-label-float="true"></paper-input>
+
+      <paper-icon-button id="lockButton" class="lockButton"
+          icon="lock"
+          hidden="false">
+      </paper-icon-button>
+
+    </div>
+
+    <div id="mirror" class="paperinputmirror">{{mirrorValue}}</div>
+
+  </template>
+
+  <script>
+
+    Polymer({
+      is: 'app-thing-input',
+
+      properties: {
+        value: {type: String, value: "", notify: true, reflectToAttribute: true},
+        label: {type:String, value: "", notify: true, reflectToAttribute: true},
+        enableLock: {type: Boolean, value: false, reflectToAttribute: true, notify: true},
+        editable: {type: Boolean, value: false},
+        changed: {type: Boolean, value: false},
+        mirrorValue: {type: String, readOnly: true},
+      },
+
+      observers:  ['changedHandler(value)'],
+
+       ready: function() {
+          this.changed = false;
+          this.editable = !this.enableLock;
+
+          this.$.paperinput.addEventListener('blur', evt => this._blurPaperInput(evt));
+          this.$.paperinput.addEventListener('focus', evt => this._focusPaperInput(evt));
+
+          this.$.lockButton.addEventListener('tap', evt => this.unlockPaperInput(evt));
+          this.$.lockButton.addEventListener('blur', evt => this.blurLockButton(evt));
+       },
+
+       logEvent: function(evt, fnName){
+         // console.log("============================");
+         // console.log(fnName);
+         // console.log("type: ", evt.type);
+         // console.log("cur Target: ", evt.currentTarget?evt.currentTarget.id:"");
+         // console.log("src Target: ", evt.srcTarget?evt.srcTarget.id:"");
+         // console.log("pln Target: ", evt.target?evt.target.id:"");
+         // console.log("rel Target: ", evt.relatedTarget?evt.relatedTarget.id:"");
+       },
+
+       _inputSpacer: function(){return 1;},
+
+       _minimumInputWidth: function(){return 40;},
+
+       unlockPaperInput: function(){
+         this.editable = true;
+         this.$.lockButton.hidden = true;
+         this.$.paperinput.focus();
+       },
+
+       blurLockButton: function(){
+         this.$.lockButton.hidden = true;
+       },
+
+       _blurPaperInput: function(evt) {
+
+         this.logEvent(evt, "_blurPaperInput");
+
+         if (this.value.length && this.enableLock) {
+            this.editable = false;
+
+            if (evt.relatedTarget && evt.relatedTarget.id != 'lockButton') {
+              this.$.lockButton.hidden = true;
+            }
+          }
+       },
+
+       _focusPaperInput: function(evt) {
+
+         this.logEvent(evt, "_focusPaperInput");
+         if (this.enableLock) {
+           if (this.value.length) {
+             if (!this.editable) {
+              this.$.lockButton.hidden = false;
+             }
+           } else {
+             this.editable = true;
+           }
+         }
+       },
+
+      setInputWidth: function(elInput, elMirror){
+        if (elInput) {
+          elInput.style.width =
+            Math.max(this._getTextWidth(elMirror.innerHTML, "bold 20px Arial"), this._minimumInputWidth())
+            + this._inputSpacer()
+            + "px";
+        }
+      },
+
+      changedHandler: function (value) {
+        if (value != this.mirrorValue) {
+          this.changed = true;
+          this._setMirrorValue(value);
+          this.setInputWidth(this.$.paperinput, this.$.mirror);
+        }
+      },
+
+      _getTextWidth: function(text, font) {
+        // re-use canvas object for better performance
+        var canvas = this.canvas || (this.canvas = document.createElement("canvas"));
+        var context = canvas.getContext("2d");
+        context.font = font;
+        var metrics = context.measureText(text);
+        return Math.round(metrics.width + 1);
+      }
+
+    });
+  </script>
+</dom-module>

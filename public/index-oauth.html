@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <title>A Place for Everything</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+      body {
+        margin: 0;
+      }
+    </style>
+    <script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <link rel="import" href="bower_components/polymerfire/firebase-app.html">
+    <link rel="import" href="a-place-for-everything-oauth.html">
+  </head>
+  <body>
+
+    <firebase-app
+      api-key="AIzaSyBRk_6o2FIwFOswOu39AdCcSAhqUb2n7oI"
+      auth-domain="a-place-for-everything.firebaseapp.com"
+      database-url="https://a-place-for-everything.firebaseio.com">
+    </firebase-app>
+
+    <a-place-for-everything-oauth></a-place-for-everything-oauth>
+
+  </body>
+</html>

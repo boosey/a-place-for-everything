@@ -1,0 +1,195 @@
+<!-- <link rel="import" href="../bower_components/paper-item/paper-item.html"> -->
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<script src="../bower_components/pluralize/pluralize.js"></script>
+
+<dom-module id="app-thing">
+  <template>
+
+    <style include="iron-flex iron-flex-alignment">
+
+    :root{
+      --thing-or-place-font-family: Arial, Sans-serif;
+      --thing-or-place-font-size: 20px;
+      --thing-or-place-font-weight: bold;
+    }
+
+    :host {
+        display: block;
+        box-sizing: border-box;
+        background-color: #fafafa;
+        color: #212121;
+        padding: 0em;
+        @apply --paper-font-common-base;
+        @apply --shadow-elevation-2dp;
+        border-radius: 3px;
+        margin: 1em;
+        width: 100% -2em;
+        font-family: Arial, Sans-serif;
+        font-size: 20px;
+      }
+
+      div.thing-or-place-item{
+        @apply --layout-horizontal;
+        @apply --layout-wrap;
+        @apply --layout-center;
+        padding: 15px;
+        padding-bottom: 17px;
+      }
+
+      div.thing-or-place-mirror{
+          font-weight: var(--thing-or-place-font-weight);
+          visibility: hidden;
+          height: 0px;
+      }
+
+      paper-input.thing-or-place {
+        --paper-input-container: {
+          padding-top: 5px;
+          padding-bottom: 0px;
+        }
+        --paper-input-container-input: {
+          font-family: var(--thing-or-place-font-family);
+          font-size: var(--thing-or-place-font-size);
+          font-weight: var(--thing-or-place-font-weight);
+        }
+        --paper-input-container-label:{
+          font-size: 16px;
+        }
+      }
+    </style>
+
+    <div class="thing-or-place-item">
+
+        <span>The&nbsp;</span>
+        <paper-input id="thinginput" class="thing-or-place" value="{{record.thing}}" label="thing" no-label-float="true"></paper-input>
+        <span>&nbsp;{{_verb}}&nbsp;</span>
+        <paper-input id="placeinput" class="thing-or-place" value="{{record.place}}" label="place" no-label-float="true"></paper-input>
+
+    </div>
+    <div id="thingmirror" class="thing-or-place-mirror">{{_thingMirrorValue}}</div>
+    <div id="placemirror" class="thing-or-place-mirror">{{record.place}}</div>
+
+  </template>
+
+  <script>
+
+    Polymer({
+      is: 'app-thing',
+
+      properties: {
+        record: {type: Object, value: {"thing":"", "place":""}},
+        _thingChanged:{type: Boolean, value: false},
+        _placeChanged:{type: Boolean, value: false},
+        _thingMirrorValue:{type: String, readOnly: true},
+        _placeMirrorValue:{type: String, readOnly: true},
+        _verb:{type: String, computed: '_computeVerbAgreement(record.thing)'},
+        _canvas:{type: Object}
+      },
+
+      observers:  ['_thingChangedHandler(record.thing)','_placeChangedHandler(record.place)'],
+
+       ready: function() {
+          this._thingChanged = false;
+          this._placeChanged = false;
+          this.$.placeinput.addEventListener('blur', evt => this._blurPlaceInput(evt));
+          this.$.thinginput.addEventListener('blur', evt => this._blurThingInput(evt));
+       },
+
+       _inputSpacer: function(){return 1;},
+
+       _minimumInputWidth: function(){return 40;},
+
+       _blurThingInput: function(evt) {
+         // if thing has changed, and the place field doesn't currently have the focus, this means that
+         // the focus has moved outside of this item and we should commit the changes
+         if (this._thingChanged) {
+           this._commitChanges();
+           this._thingChanged = false;
+         }
+       },
+
+       _blurPlaceInput: function(evt) {
+         // if place has changed, and the thing field doesn't currently have the focus, this means that
+         // the focus has moved outside of this item and we should commit the changes
+         if (this._placeChanged) {
+           this._commitChanges();
+           this._placeChanged = false;
+         }
+       },
+
+       _commitChanges: function() {
+         this.dispatchEvent(new CustomEvent('recordchanged', {detail: this.record, bubbles: true, composed: true}));
+       },
+
+        _setInputWidth: function(elInput, elMirror){
+          if (elInput) {
+            elInput.style.width =
+              Math.max(this._getTextWidth(elMirror.innerHTML, "bold 20px Arial"), this._minimumInputWidth())
+              + this._inputSpacer()
+              + "px";
+          }
+        },
+
+        _thingChangedHandler: function (thing) {
+            this._thingChanged = true;
+            this._set_thingMirrorValue(thing);
+            this._setInputWidth(this.$.thinginput, this.$.thingmirror);
+        },
+
+        _placeChangedHandler: function (thing) {
+            this._placeChanged = true;
+            this._set_placeMirrorValue(this.record.thing);
+            this._setInputWidth(this.$.placeinput, this.$.placemirror);
+        },
+
+        _getTextWidth: function(text, font) {
+          // re-use canvas object for better performance
+          var canvas = this._canvas || (this._canvas = document.createElement("canvas"));
+          var context = canvas.getContext("2d");
+          context.font = font;
+          var metrics = context.measureText(text);
+          return Math.round(metrics.width + 1);
+      },
+
+      _computeVerbAgreement: function(thing){
+        if (thing && pluralize.isPlural(thing)) {
+          return "are";
+        } else {
+          return "is";
+        }
+      },
+
+      // ready: function() {
+      //
+      //   this._observerThingMirror = new Polymer.FlattenedNodesObserver(this.$.thingmirror, (info) => {
+      //       this._processNewThingMirror(info.addedNodes);
+      //       this._processRemovedThingMirror(info.removedNodes);
+      //     });
+      //
+      //     this._observerPlaceMirror = new Polymer.FlattenedNodesObserver(this.$.placemirror, (info) => {
+      //         this._processNewPlaceMirror(info.addedNodes);
+      //         this._processRemovedPlaceMirror(info.removedNodes);
+      //       });
+      //   },
+      // _processNewThingMirror: function(addedNodes){
+      //   this._set_thingMirrorValue(this.record.thing);
+      //   this._setInputWidth(this.$.thinginput, this.$.thingmirror);
+      // },
+      //
+      // _processRemovedThingMirror: function(removedNodes) {
+      // },
+      //
+      // _processNewPlaceMirror: function(addedNodes){
+      //   this._set_placeMirrorValue(this.record.thing);
+      //   this._setInputWidth(this.$.placeinput, this.$.placemirror);
+      // },
+      //
+      // _processRemovedPlaceMirror: function(removedNodes) {
+      // }
+
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,39 @@
+
+
+<dom-module id="app-things-list">
+  <template>
+
+    <style>
+      :host {
+        display: block;
+        box-sizing: border-box;
+        background-color: #fafafa;
+        color: #212121;
+        padding: 1em;
+        @apply --paper-font-common-base;
+        @apply --shadow-elevation-2dp;
+        border-radius: 2px;
+        width: 100%;
+        height: 100%
+      }
+    </style>
+
+      <template is="dom-repeat" items="{{thingsandplaces}}">
+          <app-thing record={{item}} on-placechanged='_placeChanged'></app-thing>
+      </template>
+
+  </template>
+  <script>
+
+    Polymer({
+      is: 'app-things-list',
+
+      properties: {
+        thingsandplaces: {
+            type: Array
+        }
+      }
+
+    });
+  </script>
+</dom-module>

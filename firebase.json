@@ -1,0 +1,36 @@
+{
+  "database": {
+    "rules": "database.rules.json"
+  },
+  "functions": {
+    "predeploy": [
+      /* "npm --prefix $RESOURCE_DIR run lint" */
+    ]
+  },
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "function": "api"
+      },
+      {
+        "source": "/oauth/userloggedin",
+        "function": "userloggedin"
+      },
+      {
+        "source": "/index-oauth",
+        "destination": "/index-oauth.html"
+      },
+      {
+        "source": "/index",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

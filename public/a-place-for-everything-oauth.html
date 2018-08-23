@@ -1,0 +1,120 @@
+<link rel="import" href="bower_components/polymerfire/polymerfire.html">
+<link rel="import" href="bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/font-roboto/roboto.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-icon/iron-icon.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../bower_components/app-route/app-location.html">
+
+<dom-module id="a-place-for-everything-oauth">
+  <template>
+    <style>
+      :host {
+        position: absolute;
+        top: 46px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--paper-purple-500);
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 1;
+        color: var(--paper-purple-50);
+
+        @apply --layout;
+        @apply --layout-center-center;
+      }
+
+      paper-button > * {
+        vertical-align: middle;
+        text-transform: none;
+      }
+    </style>
+
+    <firebase-auth
+        id="auth"
+        provider="google"
+        signed-in="{{signedIn}}"
+        user="{{user}}">
+    </firebase-auth>
+
+    <paper-button on-tap="signIn">
+      <iron-icon icon="account-circle"></iron-icon>
+      <span>Sign in with Google</span>
+    </paper-button>
+
+    <app-location route="{{route}}" query-params="{{queryParams}}"></app-location>
+
+    <iron-ajax
+      id="sendLoggedInUserToOAuthAPI"
+      method="post"
+      url="https://a-place-for-everything.firebaseapp.com/oauth/userloggedin"
+      handle-as="json"
+      on-response="handleResponseUserLoggedIn"
+      content-type="text/plain"
+      body={{stringifiedUser}}>
+    </iron-ajax>
+
+  </template>
+  <script>
+    Polymer({
+      is: 'a-place-for-everything-oauth',
+
+      properties: {
+
+        user: {
+            type:Object,
+            notify: true,
+            reflectToAttribute: true
+        },
+
+        stringifiedUser: {
+          type: String,
+          notify: true
+        },
+
+        idToken: {
+            type: String,
+            notify: true
+        },
+
+        queryParams: {
+          type: String
+        }
+
+      },
+
+      observers: ['_userChanged(signedIn)'],
+
+      ready: function() {
+      },
+
+      _userChanged(signedIn){
+
+        if (signedIn) {
+          // console.log("queryParams: ", this.queryParams);
+          // console.log("incoming state: ", this.queryParams.state);
+          this.state = this.queryParams.state;
+          // console.log("sending user: ", this.user);
+          this.stringifiedUser = JSON.stringify(this.user);
+          this.$.sendLoggedInUserToOAuthAPI.generateRequest();
+        }
+      },
+
+      handleResponseUserLoggedIn: function(evt){
+        if (evt) {
+          var redirectURI = evt.detail.response.redirectURI
+            + "?code=" + evt.detail.response.authorization_code
+            + "&state=" + this.state;
+
+          window.location = redirectURI;
+        }
+      },
+
+      signIn: function() {
+        this.$.auth.signInWithRedirect();
+      }
+
+    });
+  </script>
+</dom-module>

@@ -1,0 +1,112 @@
+<!-- <link rel="import" href="../bower_components/paper-item/paper-item.html"> -->
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+<script src="../bower_components/pluralize/pluralize.js"></script>
+
+<dom-module id="app-add-thing">
+  <template>
+
+    <style include="iron-flex iron-flex-alignment">
+    :host {
+        display: block;
+        box-sizing: border-box;
+        background-color: #fafafa;
+        color: #212121;
+        padding: 0em;
+        @apply --paper-font-common-base;
+        @apply --shadow-elevation-2dp;
+        border-radius: 3px;
+        margin: 8px;
+        width: 100% -2em;
+        font-family: Arial, Sans-serif;
+        font-size: 20px;
+      }
+
+      div.add-panel{
+        @apply --layout-vertical;
+        padding: 0px;
+        margin: 5px;
+        margin-left: 10px;
+        margin-right: 10px;
+      }
+
+      paper-icon-button.tools-button{
+        --paper-icon-button:{
+          width: 25px;
+          height: 25px;
+         padding: 0px;
+         margin-left: : 5px;
+         margin-top: : 5px;
+        }
+      }
+
+      .tools{
+        @apply --layout-horizontal;
+        @apply --layout-justified;
+      }
+
+      div.pin:{
+        flex-grow: 1;
+      }
+    </style>
+
+    <template is="dom-if" if="{{showing}}">
+      <div class="add-panel">
+
+        <div class="tools">
+
+          <div class="pin">
+            <paper-icon-button id="pinbutton" class="tools-button" icon="visibility" on-tap="_pin"></paper-icon-button>
+          </div>
+
+          <paper-icon-button id="cancelbutton" class="tools-button" icon="close" on-tap="_cancel" ></paper-icon-button>
+
+        </div>
+
+        <app-thing id="newThing" record={{record}} autofocus="true"></app-thing>
+
+      </div>
+    </template>
+
+  </template>
+
+  <script>
+
+    Polymer({
+      is: 'app-add-thing',
+
+      properties: {
+        record: {type: Object, value: {"thing":"", "place":""}, reflectToAttribute: true, notify: true},
+        showing: {type: Boolean, value: false, reflectToAttribute: true, notify: true},
+        pinned: {type: Boolean, value: false, reflectToAttribute: true, notify: true},
+      },
+
+      ready: function(){
+          // this._observerThingMirror = new Polymer.FlattenedNodesObserver(this.$.pinbutton, (info) => {
+          //     this._processNewPinButton(info.addedNodes);
+          //   });
+
+      },
+
+      _processNewThingNode: function(nodes){
+
+      },
+
+     _cancel: function(){
+         this.showing = false;
+     },
+
+     _pin: function(){
+       this.pinned = !this.pinned;
+       this.$$('#pinbutton').style.color = this.pinned ? "blue" : "black";
+     },
+
+     ready: function() {
+
+     },
+
+    });
+  </script>
+</dom-module>

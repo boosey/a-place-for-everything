@@ -1,0 +1,191 @@
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/polymer/lib/utils/flattened-nodes-observer.html">
+<link rel="import" href="../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
+
+
+<script src="../bower_components/pluralize/pluralize.js"></script>
+
+<dom-module id="app-thing">
+  <template>
+    <style include="iron-flex iron-flex-alignment">
+    :root{
+      --thing-or-place-font-family: Arial, Sans-serif;
+      --thing-or-place-font-size: 20px;
+      --thing-or-place-font-weight: bold;
+    }
+
+    :host {
+        display: block;
+        box-sizing: border-box;
+        background-color: #fafafa;
+        color: #212121;
+        padding: 0em;
+        @apply --paper-font-common-base;
+        @apply --shadow-elevation-4dp;
+        border-radius: 3px;
+        margin: 1em;
+        width: 100% -2em;
+        font-family: Arial, Sans-serif;
+        font-size: 20px;
+      }
+
+      div.thing-or-place-item{
+        @apply --layout-horizontal;
+        @apply --layout-center;
+        padding: 15px;
+        padding-top: 17px;
+        @apply --layout-justified;
+      }
+
+      div.thing-or-place-item-container{
+        @apply --layout-horizontal;
+        @apply --layout-wrap;
+        @apply --layout-start;
+      }
+
+      paper-icon-button.deleteButton{
+        padding: 0px;
+        width: 26px;
+        height: 26px;
+      }
+    </style>
+
+    <div id="thingorplaceitem" class="thing-or-place-item">
+
+      <div class="thing-or-place-item-container">
+        <span tabindex="-1">The&nbsp;</span>
+
+        <app-thing-input id="thinginput" class="thing-or-place" value="{{record.thing}}"
+            enable-lock="true" label="thing" no-label-float="true"></app-thing-input>
+
+        <span>&nbsp;{{_verb}}&nbsp;</span>
+
+        <app-thing-input id="placeinput" class="thing-or-place" value="{{record.place}}"
+            label="place" no-label-float="true"></app-thing-input>
+
+      </div>
+
+      <paper-icon-button id="deleteButton" class="deleteButton" tabindex="-1"
+          icon="delete"
+          hidden="false">
+      </paper-icon-button>
+
+    </div>
+
+  </template>
+
+  <script>
+
+    Polymer({
+      is: 'app-thing',
+
+      properties: {
+        record: {type: Object, value: {"thing":"", "place":""}},
+        _thingChanged: {type: Boolean, value: false},
+        _placeChanged: {type: Boolean, value: false},
+        _verb: {type: String, computed: '_computeVerbAgreement(record.thing)'},
+      },
+
+      observers:  ['_thingChangedHandler(record.thing)','_placeChangedHandler(record.place)'],
+
+       ready: function() {
+          this._thingChanged = false;
+          this._placeChanged = false;
+
+          this.$.thingorplaceitem.addEventListener('focusin', evt => this._focusInItem(evt));
+          this.$.thingorplaceitem.addEventListener('focusout', evt => this._focusOutItem(evt));
+          this.$.thingorplaceitem.addEventListener('click', evt => this._clickItem(evt));
+
+          this.$.placeinput.addEventListener('blur', evt => this._blurPlaceInput(evt));
+          this.$.placeinput.addEventListener('focus', evt => this._focusPlaceInput(evt));
+
+          this.$.thinginput.addEventListener('blur', evt => this._blurThingInput(evt));
+          this.$.thinginput.addEventListener('focus', evt => this._focusThingInput(evt));
+
+          this.$.deleteButton.addEventListener('tap', evt => this._deleteRecord(evt));
+       },
+
+       // logEvent: function(evt, fnName){
+       //   // console.log("============================");
+       //   // console.log(fnName);
+       //   // console.log("type: ", evt.type);
+       //   // console.log("cur Target: ", evt.currentTarget?evt.currentTarget.id:"");
+       //   // console.log("src Target: ", evt.srcTarget?evt.srcTarget.id:"");
+       //   // console.log("pln Target: ", evt.target?evt.target.id:"");
+       //   // console.log("rel Target: ", evt.relatedTarget?evt.relatedTarget.id:"");
+       // },
+
+       _focusInItem: function(evt){
+         this._hideItemDeleteButton(this.$.deleteButton, false);
+       },
+
+       _focusOutItem: function(evt){
+         this._hideItemDeleteButton(this.$.deleteButton, true);
+       },
+
+       _hideItemDeleteButton(itemNode, hide){
+         itemNode.hidden = hide;
+       },
+
+       _clickItem: function(evt){
+         if (this.parentNode.curItem && this.parentNode.curItem != this) {
+           this._hideItemDeleteButton(this.parentNode.curItem.$.deleteButton, true);
+         }
+
+         if (evt.target.id == "thingorplaceitem") {
+           this._hideItemDeleteButton(this.$.deleteButton, false);
+           this.parentNode.curItem = this;
+         }
+       },
+
+       _blurThingInput: function(evt) {
+         if (this._thingChanged && this.record.thing.length) {
+           this._commitChanges();
+         }
+       },
+
+       _focusThingInput: function(evt) {
+         if (this.record.thing.length) {
+           this._hideItemDeleteButton(this.$.deleteButton, false);
+         }
+       },
+
+       _focusPlaceInput(evt){
+         // this.$.deleteButton.hidden = false;
+         this._hideItemDeleteButton(this.$.deleteButton, false);
+       },
+
+       _blurPlaceInput: function(evt) {
+         if (this._placeChanged && this.record.place.length) {
+           this._commitChanges();
+         }
+       },
+
+       _commitChanges: function() {
+         this.dispatchEvent(new CustomEvent('recordchanged', {detail: this.record, bubbles: true, composed: true}));
+         this._placeChanged = false;
+         this._thingChanged = false;
+       },
+
+       _deleteRecord: function(){
+         this.dispatchEvent(new CustomEvent('recorddeleted', {detail: this.record, bubbles: true, composed: true}));
+       },
+
+        _thingChangedHandler: function (thing) {
+            this._thingChanged = true;
+        },
+
+        _placeChangedHandler: function (place) {
+            this._placeChanged = true;
+        },
+
+      _computeVerbAgreement: function(thing){
+        if (thing && pluralize.isPlural(thing)) {
+          return "are";
+        } else {
+          return "is";
+        }
+      }
+    });
+  </script>
+</dom-module>
